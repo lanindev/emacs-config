@@ -1,3 +1,4 @@
+# TODO: Clean up
 auto-save-list
 bookmarks
 eshell
@@ -17,3 +18,4 @@ tmp
 request
 .mc-lists.el
 /transient
+.DS_Store
