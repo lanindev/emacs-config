@@ -1,11 +1,12 @@
 #+TITLE: Emacs configuration file
+#+AUTHOR: Andrew Lanin
 #+AUTHOR: Rakhim Davletkaliyev
 #+BABEL: :cache yes
 #+PROPERTY: header-args :tangle yes
 #+STARTUP: overview
 
 * Credits
-Initially inspired by [[https://github.com/larstvei/dot-emacs][larstvei's]] setup. Check out [[https://github.com/freetonik/emacscast][EmacsCast]], my podcast about Emacs. I talk about my config in [[https://github.com/freetonik/emacscast/blob/master/episode_2.org][Episode 2]].
+Based on [[https://github.com/freetonik/emacs-dotfiles][Rakhim's config]]. Check out [[https://github.com/freetonik/emacscast][EmacsCast]], his podcast about Emacs.
 
 * Installing
 
@@ -32,13 +33,7 @@ brew install aspell
 
 ** Config
 
-I think it'll be better not to clone and use this config as is, but rather build your own config using mine as a starting point. But if you really want to try it, then follow these steps:
-
-Clone the repo:
-
-#+BEGIN_SRC sh :tangle no
-git clone https://github.com/freetonik/emacs-dotfiles
-#+END_SRC
+I think it'll be better not to clone and use this config as is, but rather build your own config using mine as a starting point.
 
 Make a backup of your old =.emacs.d=:
 
@@ -46,10 +41,10 @@ Make a backup of your old =.emacs.d=:
 mv ~/.emacs.d ~/.emacs.d-bak
 #+END_SRC
 
-Rename cloned directory:
+Fork the repo, than clone it:
 
 #+BEGIN_SRC sh :tangle no
-mv emacs-dotfiles ~/.emacs.d
+git clone https://github.com/<username>/emacs-config .emacs.d
 #+END_SRC
 
 On the first run Emacs will install some packages. It's best to restart Emacs after that process is done for the first time.
