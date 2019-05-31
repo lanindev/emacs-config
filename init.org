@@ -14,21 +14,14 @@ Based on [[https://github.com/freetonik/emacs-dotfiles][Rakhim's config]]. Check
 
 This config works best with this [[https://emacsformacosx.com/][https://emacsformacosx.com/]].
 
-Alternative build:
-
-#+BEGIN_SRC sh :tangle no
-brew tap railwaycat/emacsmacport
-brew cask install emacs-mac
-#+END_SRC
-
 ** Dependencies
 
 Few utils needed.
 
 #+BEGIN_SRC sh :tangle no
-brew install ripgrep
-brew cask install mactex
-brew install aspell
+brew install ripgrep # TODO: Why?
+brew cask install mactex # TODO: Why?
+brew install aspell # Spell checker
 #+END_SRC
 
 ** Config
@@ -111,7 +104,7 @@ This helps get rid of =functions might not be defined at runtime= warnings. See 
   (setq use-package-expand-minimally byte-compile-current-file))
 #+END_SRC
 
-** Use package
+** Package management
 
 Initialize package and add Melpa source.
 
@@ -144,18 +137,13 @@ Install use-package.
 ** Modifier keys
 
 Emacs control is Ctrl. Emacs Super is Command. Emacs Meta is Alt.
-
-#+BEGIN_SRC emacs-lisp
-(setq mac-right-command-modifier 'super)
-(setq mac-left-option-modifier 'meta)
-(setq mac-right-option-modifier 'meta)
-(setq mac-option-modifier 'meta)
-(setq mac-command-modifier 'super)
-#+END_SRC
-
 Right Alt (option) can be used to enter symbols like em dashes =—=.
 
 #+BEGIN_SRC emacs-lisp
+(setq mac-command-modifier 'super)
+(setq mac-right-command-modifier 'super)
+(setq mac-option-modifier 'meta)
+(setq mac-left-option-modifier 'meta)
 (setq mac-right-option-modifier 'nil)
 #+END_SRC
 
@@ -173,9 +161,8 @@ Inconsolata font, remove the cruft and make the initial size bigger.
 
 #+BEGIN_SRC emacs-lisp
 (set-face-attribute 'default nil :font "Inconsolata LGC 14")
-;; (setq default-frame-alist '((font . "Inconsolata LGC 14")))
 (setq-default line-spacing 0)
-(setq initial-frame-alist '((width . 135) (height . 55)))
+(setq initial-frame-alist '((width . 150) (height . 40)))
 (tool-bar-mode -1)
 #+END_SRC
 
@@ -203,7 +190,7 @@ Nice and simple mode line.
 Show full path in the title bar.
 
 #+BEGIN_SRC emacs-lisp
-(setq-default frame-title-format "%b (%f)")
+(setq-default frame-title-format "%f")
 #+END_SRC
 
 Never use tabs, use spaces instead.
@@ -784,6 +771,17 @@ Handy killall command.
   (mapc 'kill-buffer (buffer-list)))
 #+END_SRC
 
+** Which key
+
+This is great for learning Emacs, it shows a nice table of possible commands.
+
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package which-key
+  :config
+  (which-key-mode)
+  (setq which-key-idle-delay 0.5))
+#+END_SRC
+
 * Org
 
 Visually indent sections. This looks better for smaller files.
@@ -794,16 +792,16 @@ Visually indent sections. This looks better for smaller files.
   (setq org-startup-indented t))
 #+END_SRC
 
-Store all my org files in =~/Google Drive/Knowledgebase/org=.
+Set directory for ORG files.
 
 #+BEGIN_SRC emacs-lisp
-(setq org-directory "~/Google Drive/Knowledgebase/org")
+(setq org-directory "~/OneDrive/org")
 #+END_SRC
 
 And all of those files should be in included agenda.
 
 #+BEGIN_SRC emacs-lisp
-(setq org-agenda-files '("~/Google Drive/Knowledgebase/org"))
+(setq org-agenda-files '("~/OneDrive/org"))
 #+END_SRC
 
 Refile targets should include files and down to 9 levels into them.
@@ -844,28 +842,12 @@ State changes for todos and also notes should go into a Logbook drawer:
 (setq org-log-into-drawer t)
 #+END_SRC
 
-I keep my links in =links.org=, export them to HTML and access them via browser. This makes the HTML file automatically on every save.
-
-#+BEGIN_SRC emacs-lisp
-(defun org-mode-export-links ()
-  "Export links document to HTML automatically when 'links.org' is changed"
-  (when (equal (buffer-file-name) "/Users/rakhim/Google Drive/Knowledgebase/org/links.org")
-    (progn
-      (org-html-export-to-html)
-      (message "HTML exported"))))
-
-(add-hook 'after-save-hook 'org-mode-export-links)
-#+END_SRC
-
 Quickly open todo and config files.
 
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "\e\ec") (lambda () (interactive) (find-file "~/.emacs.d/init.org")))
-(global-set-key (kbd "\e\ej") (lambda () (interactive) (find-file "~/Google Drive/Knowledgebase/org/journal.org")))
-(global-set-key (kbd "\e\em") (lambda () (interactive) (find-file "~/Google Drive/Knowledgebase/org/main.org")))
-(global-set-key (kbd "\e\el") (lambda () (interactive) (find-file "~/Google Drive/Knowledgebase/org/links.org")))
-(global-set-key (kbd "\e\eb") (lambda () (interactive) (find-file "~/code/rakhim.org/content-org/blog.org")))
-(global-set-key (kbd "\e\ef") (lambda () (interactive) (counsel-rg nil "~/Google Drive/Knowledgebase/org")))
+(global-set-key (kbd "\e\ej") (lambda () (interactive) (find-file "~/OneDrive/org/journal.org")))
+(global-set-key (kbd "\e\ef") (lambda () (interactive) (counsel-rg nil "~/OneDrive/org")))
 #+END_SRC
 
 Org capture.
@@ -915,129 +897,6 @@ Narrow and widen with =Cmd+Ctrl+Up/Down=.
 (define-key org-mode-map (kbd "C-s-<up>") 'widen)
 #+END_SRC
 
-** Capture templates
-
-#+BEGIN_SRC emacs-lisp
-(setq org-capture-templates
-      (quote (
-               ;; (("t"
-               ;;   "TODO"
-               ;;   entry
-               ;;   (file+olp "inbox.org" "Tasks")
-               ;;   "* TODO %?\n%U\n%a\n")
-
-               ("n"
-                 "Knowledge Base Note"
-                 entry
-                 (file+olp "main.org" "Inbox")
-                 "* %?\n%U\n%a\n")
-               ("j"
-                 "Journal"
-                 entry
-                 (file+datetree "journal.org")
-                 "* %U\n%?"))
-               ))
-#+END_SRC
-
-** Pandoc exporter
-
-#+BEGIN_SRC emacs-lisp
-(use-package ox-pandoc)
-#+END_SRC
-
-** Blogging with hugo
-Install =ox-hugo= and enable auto export.
-
-#+BEGIN_SRC emacs-lisp
-(use-package ox-hugo
-  :after ox)
-#+END_SRC
-
-Org Capture template to quickly create posts and generate slugs.
-
-#+BEGIN_SRC emacs-lisp
-;; Populates only the EXPORT_FILE_NAME property in the inserted headline.
-(require 'ox-hugo)
-;; define variable to get rid of 'reference to free variable' warnings
-(defvar org-capture-templates nil)
-(with-eval-after-load 'org-capture
-  (defun org-hugo-new-subtree-post-capture-template ()
-    "Returns `org-capture' template string for new blog post.
-See `org-capture-templates' for more information."
-    (let* ((title (read-from-minibuffer "Post Title: ")) ;Prompt to enter the post title
-           (fname (org-hugo-slug title)))
-      (mapconcat #'identity
-                 `(
-                   ,(concat "* TODO " title)
-                   ":PROPERTIES:"
-                   ,(concat ":EXPORT_FILE_NAME: " fname)
-                   ":END:"
-                   "%?\n")          ;Place the cursor here finally
-                 "\n")))
-
-  (defun org-hugo-new-subtree-post-capture-template-comic ()
-    "Returns `org-capture' template string for new comic post.
-See `org-capture-templates' for more information."
-    (let* ((title (read-from-minibuffer "Comic Title: ")) ;Prompt to enter the post title
-           (fname (read-from-minibuffer "Image Filename: "))
-           (cnumber (number-to-string (length (org-map-entries nil nil '("/Users/rakhim/code/rakhim.org/content-org/honestly-undefined.org"))))))
-
-      (mapconcat #'identity
-                 `(
-                   ,(concat "* TODO " title)
-                   ":PROPERTIES:"
-                   ,(concat ":EXPORT_FILE_NAME: " fname)
-                   ,(concat ":EXPORT_HUGO_SLUG: " cnumber)
-                   ":END:"
-                   "%?\n")          ;Place the cursor here finally
-                 "\n")))
-
-  (add-to-list 'org-capture-templates
-               '("b"
-                 "Blog post at rakhim.org"
-                 entry
-                 (file+olp "/Users/rakhim/code/rakhim.org/content-org/blog.org" "Blog")
-                 (function org-hugo-new-subtree-post-capture-template)))
-  (add-to-list 'org-capture-templates
-               '("c"
-                 "Comic at rakhim.org"
-                 entry
-                 (file+olp "/Users/rakhim/code/rakhim.org/content-org/honestly-undefined.org" "Comics")
-                 (function org-hugo-new-subtree-post-capture-template-comic))))
-#+END_SRC
-
-** Slim HTML export
-
-slimhtml is an emacs org mode export backend. It is a set of transcoders for common org elements which outputs minimal HTML.
-
-#+BEGIN_SRC emacs-lisp
-(use-package htmlize)
-(use-package ox-slimhtml)
-
-(defun org-html-export-as-slimhtml
-(&optional async subtreep visible-only body-only ext-plist)
-  (interactive)
-  (org-export-to-buffer 'slimhtml "*slimhtml*"
-    async subtreep visible-only body-only ext-plist (lambda () (html-mode))))
-
-(eval-after-load 'org
-  `(define-key org-mode-map (kbd "s-O") (lambda ()
-                                          (interactive)
-                                          (org-html-export-as-slimhtml nil nil nil t)
-                                          (with-no-warnings (mark-whole-buffer))
-                                          (simpleclip-copy (point-min) (point-max))
-                                          (delete-window))))
-#+END_SRC
-
-* Customizations
-
-Store custom-file separately, don't freak out when it's not found.
-
-#+BEGIN_SRC emacs-lisp
-(setq custom-file "~/.emacs.d/custom.el")
-(load custom-file 'noerror)
-#+END_SRC
-
 * Server
 
 Start an Emacs server. This way, I can use emacsclient from the terminal.
@@ -1052,219 +911,4 @@ To enable easy emacsclient, create =~/bin/ec=:
 #!/bin/sh
 # this assumes that my regular emacs app runs the server as part of startup
 emacsclient -n "$@" || (open -a emacs "$@")
-#+END_SRC
-
-* Useful, unused snippets
-
-Here are some snippets of elisp and config that aren't currently used, but I don't want to lose them in git history. None of these are tangled.
-
-** Manually installed packages
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(add-to-list 'load-path "~/.emacs.d/lisp/")
-(load "edit-indirect")
-#+END_SRC
-
-** Parens
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(require 'paren)
-(setq show-paren-delay 0)
-(show-paren-mode 1)
-(set-face-foreground 'show-paren-match nil)
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package smartparens
-  :config
-  ;; (require 'smartparens-config)
-  (smartparens-global-mode t)
-  (show-smartparens-global-mode t)
-  (setq sp-show-pair-delay 0)
-
-  ;; no '' pair in emacs-lisp-mode
-  (sp-local-pair 'emacs-lisp-mode "'" nil :actions nil)
-  ;; (sp-local-pair 'markdown-mode "`"   nil :actions '(wrap insert))  ;; only use ` for wrap and auto insertion in markdown-mode
-  ;; (sp-local-tag 'markdown-mode "s" "```scheme" "```")
-  (define-key smartparens-mode-map (kbd "C-s-<right>") 'sp-forward-slurp-sexp)
-  (define-key smartparens-mode-map (kbd "C-s-<left>") 'sp-forward-barf-sexp))
-#+END_SRC
-
-** Move around with =Cmd+i/j/k/l=
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(global-set-key (kbd "s-i") 'previous-line)
-(global-set-key (kbd "s-k") 'next-line)
-(global-set-key (kbd "s-j") 'left-char)
-(global-set-key (kbd "s-l") 'right-char)
-#+END_SRC
-
-** And show changes in the gutter (fringe)
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package git-gutter
-  :config
-  (global-git-gutter-mode 't)
-  (set-face-background 'git-gutter:modified 'nil) ;; background color
-  (set-face-foreground 'git-gutter:added "green4")
-  (set-face-foreground 'git-gutter:deleted "red"))
-#+END_SRC
-
-** Projectile
-
-Install Projectile.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package projectile
-  :config
-  (setq projectile-enable-caching t)
-  (define-key projectile-mode-map (kbd "s-P") 'projectile-command-map)
-  (projectile-mode +1))
-#+END_SRC
-
-** Helm
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package helm-swoop)
-(use-package helm
-  :config
-  (require 'helm-config)
-  (helm-mode 1)
-  (helm-autoresize-mode 1)
-  (setq helm-follow-mode-persistent t)
-  (global-set-key (kbd "M-x") 'helm-M-x)
-  (setq helm-M-x-fuzzy-match t)
-  (setq helm-buffers-fuzzy-matching t)
-  (setq helm-recentf-fuzzy-match t)
-  (setq helm-apropos-fuzzy-match t)
-  (setq helm-split-window-inside-p t)
-  ;; (global-set-key (kbd "M-y") 'helm-show-kill-ring)
-  ;; (global-set-key (kbd "s-b") 'helm-mini)
-  ;; (global-set-key (kbd "C-x C-f") 'helm-find-files)
-  ;; (global-set-key (kbd "s-f") 'helm-swoop)
-  )
-(setq helm-swoop-pre-input-function
-      (lambda () ""))
-
-(use-package helm-projectile
-  :config
-  (helm-projectile-on))
-
-(use-package helm-ag
-  :config
-  (global-set-key (kbd "s-F") 'helm-projectile-ag))
-
-(global-set-key (kbd "s-p") 'helm-projectile-find-file)
-#+END_SRC
-
-** Counsel integration for Projectile (disabled)
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package counsel-projectile
-  :config
-  (counsel-projectile-mode 1)
-  (global-set-key (kbd "s-F") 'counsel-projectile-ag)
-  (global-set-key (kbd "s-p") 'counsel-projectile))
-
-(setq projectile-completion-system 'ivy)
-#+END_SRC
-
-** Frames
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(set-frame-name "EDIT")
-(make-frame '((name . "ORG")))
-
-(progn
-(make-frame '((name . "TERM")))
-  (select-frame-by-name "EDIT")
-  (multi-term))
-(make-frame '((name . "ORG")))
-
-(global-set-key (kbd "s-1") (lambda () (interactive) (select-frame-by-name "EDIT")))
-(global-set-key (kbd "s-2") (lambda () (interactive) (select-frame-by-name "TERM")))
-(global-set-key (kbd "s-3") (lambda () (interactive) (select-frame-by-name "ORG")))
-#+END_SRC
-
-** Ivy-rich
-
-Ivy-rich makes Ivy a bit more friendly by adding information to ivy buffers, e.g. description of commands in =M-x=, meta info about buffers in =ivy-switch-buffer=, etc.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package ivy-rich
-  :config
-  (ivy-rich-mode 1)
-  (setq ivy-rich-path-style 'abbrev)) ;; To abbreviate paths using abbreviate-file-name (e.g. replace “/home/username” with “~”
-#+END_SRC
-
-** Fringe indicator
-
-#+BEGIN_SRC emacs-lisp
-
-(defface my-custom-curly-face-2
-  '((t (:foreground "lightgray")))
-  "Face for fringe curly bitmaps."
-  :group 'basic-faces)
-
-(set-fringe-bitmap-face 'right-arrow 'my-custom-curly-face-2)
-
-
-(setq-default fringe-indicator-alist '((truncation left-arrow right-arrow)
- (continuation nil right-arrow)
- (overlay-arrow . right-triangle)
- (up . up-arrow)
- (down . down-arrow)
- (top top-left-angle top-right-angle)
- (bottom bottom-left-angle bottom-right-angle top-right-angle top-left-angle)
- (top-bottom left-bracket right-bracket top-right-angle top-left-angle)
- (empty-line . empty-line)
- (unknown . question-mark)))
-#+END_SRC
-
-** Modeline
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(set-face-attribute 'mode-line nil :background "NavajoWhite")
-(set-face-attribute 'mode-line-inactive nil :background "#FAFAFA")
-#+END_SRC
-
-** Paredit + Electrinc pair mode?
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(put 'paredit-backward-delete 'delete-selection 'supersede)
-
-(electric-pair-mode 1)
-(defvar markdown-electric-pairs '((?* . ?*)) "Electric pairs for markdown-mode.")
-(defun markdown-add-electric-pairs ()
-  (setq-local electric-pair-pairs (append electric-pair-pairs markdown-electric-pairs))
-  (setq-local electric-pair-text-pairs electric-pair-pairs))
-(add-hook 'markdown-mode-hook 'markdown-add-electric-pairs)
-#+END_SRC
-
-** Which key
-
-This is great for learning Emacs, it shows a nice table of possible commands.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package which-key
-  :config
-  (which-key-mode)
-  (setq which-key-idle-delay 0.5))
-#+END_SRC
-
-** NeoTree
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package neotree
-  :config
-  (setq neo-window-width 32
-        neo-create-file-auto-open t
-        neo-banner-message nil
-        neo-mode-line-type 'neotree
-        neo-smart-open t
-        neo-show-hidden-files t
-        neo-mode-line-type 'none
-        neo-auto-indent-point t)
-  (setq neo-theme (if (display-graphic-p) 'nerd 'arrow))
-  (global-set-key (kbd "s-B") 'neotree-toggle))
 #+END_SRC
