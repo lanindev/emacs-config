@@ -156,7 +156,7 @@ But then it's being replaced by result of org file processing (tangling). Here b
 ;; Ensure there is new line at the end of file
 (setq require-final-newline t)
 #+END_SRC
-** Editor
+** Editing
 #+BEGIN_SRC emacs-lisp
 (setq
  echo-keystrokes 0.1               ; Show keystrokes right away, don't show the message in the scratch buffer
@@ -239,11 +239,6 @@ But then it's being replaced by result of org file processing (tangling). Here b
 (global-set-key (kbd "M-u") 'upcase-dwim)
 (global-set-key (kbd "M-l") 'downcase-dwim)
 
-;; Replace command with nice visual feedback
-(use-package visual-regexp
-  :config
-  (define-key global-map (kbd "s-r") 'vr/replace))
-
 ;; Multiple cursor support
 (use-package multiple-cursors
   :config
@@ -251,8 +246,12 @@ But then it's being replaced by result of org file processing (tangling). Here b
   (global-set-key (kbd "s-d") 'mc/mark-next-like-this)
   (global-set-key (kbd "s-D") 'mc/mark-all-dwim)
   (define-key mc/keymap (kbd "<return>") nil))
+
+;; Select any region and edit it in another buffer.
+;; TODO: Bindings?
+(use-package edit-indirect)
 #+END_SRC
-** Navigation & mark
+** Navigation & marking
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "s-a") 'mark-whole-buffer)
 
@@ -318,6 +317,115 @@ But then it's being replaced by result of org file processing (tangling). Here b
 ;; Close
 (global-set-key (kbd "s-w") (kbd "C-x 0")) ; close current (like in browser)
 (global-set-key (kbd "s-W") (kbd "C-x 1")) ; close all others
+
+;; Make new windows spawn on the bottom, not on the side
+(setq split-height-threshold 0)
+(setq split-width-threshold nil)
+
+;; Move between windows
+;; TODO: Need better bindings
+(global-set-key (kbd "s-o") (kbd "C-x o"))
+(use-package windmove
+  :config
+  (global-set-key (kbd "s-[")   'windmove-left)  ; Cmd+[ go to left window
+  (global-set-key (kbd "s-]")   'windmove-right) ; Cmd+] go to right window
+  (global-set-key (kbd "s-{")   'windmove-up)    ; Cmd+Shift+[ go to upper window
+  (global-set-key (kbd "s-<}>") 'windmove-down)) ; Ctrl+Shift+[ go to down window
+
+;; TODO: What is this?
+(winner-mode 1)
+
+;; Custom windows possitioning
+(use-package shackle
+  :init
+  (setq shackle-default-alignment 'below
+        shackle-default-size 0.4
+        shackle-rules '((help-mode           :align below :select t)
+                        (helpful-mode        :align below)
+                        (compilation-mode    :select t   :size 0.25)
+                        ("*compilation*"     :select nil :size 0.25)
+                        ("*ag search*"       :select nil :size 0.25)
+                        ("*Flycheck errors*" :select nil :size 0.25)
+                        ("*Warnings*"        :select nil :size 0.25)
+                        ("*Error*"           :select nil :size 0.25)
+                        ("*Org Links*"       :select nil :size 0.1)
+                        (magit-status-mode                :align bottom :size 0.5  :inhibit-window-quit t)
+                        (magit-log-mode                   :same t                  :inhibit-window-quit t)
+                        (magit-commit-mode                :ignore t)
+                        (magit-diff-mode     :select nil  :align left   :size 0.5)
+                        (git-commit-mode                  :same t)
+                        (vc-annotate-mode                 :same t)
+                        ))
+  :config
+  (shackle-mode 1))
+#+END_SRC
+** Search
+#+BEGIN_SRC emacs-lisp
+;; Generic completion library
+(use-package ivy
+  :config
+  (ivy-mode 1)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-count-format "(%d/%d) ")
+  (setq enable-recursive-minibuffers t)
+  (setq ivy-initial-inputs-alist nil)
+  (setq ivy-re-builders-alist
+      '((swiper         . ivy--regex-plus)
+        (swiper-isearch . ivy--regex-plus)
+        (counsel-ag     . ivy--regex-plus)
+        (counsel-rg     . ivy--regex-plus)
+        (t              . ivy--regex-fuzzy))) ; enable fuzzy searching everywhere except for Swiper and ag
+
+  (global-set-key (kbd "s-b") 'ivy-switch-buffer))
+
+;; Search inside file
+(use-package swiper
+  :config
+  (global-set-key (kbd "s-f") 'swiper-isearch))
+
+;; Replace with nice visual feedback
+(use-package visual-regexp
+  :config
+  (define-key global-map (kbd "s-r") 'vr/replace))
+
+;; Boost some standard emacs with ivy completion
+(use-package counsel
+  :config
+  (global-set-key (kbd "M-x")     'counsel-M-x)
+  (global-set-key (kbd "s-y")     'counsel-yank-pop)
+  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+  (global-set-key (kbd "s-F")     'counsel-rg)
+  (global-set-key (kbd "s-p")     'counsel-git))
+
+;; When using git ls (via counsel-git), include unstaged files
+(setq counsel-git-cmd "git ls-files --full-name --exclude-standard --others --cached --")
+
+;; M-x enchancer, displays most frequently used commands first
+(use-package smex)
+
+;; Fuzzy matching engine
+(use-package flx)
+#+END_SRC
+** Writing
+#+BEGIN_SRC emacs-lisp
+;; Set external spell checking command
+(setq ispell-program-name "aspell")
+
+;; Enable spellcheck on the fly for all text modes. This includes org, latex and LaTeX.
+(add-hook 'text-mode-hook 'flyspell-mode)
+
+;; Spellcheck current word.
+(global-set-key (kbd "s-\\") 'ispell-word)
+
+;; Search synonyms for the word
+;; (use-package powerthesaurus
+;;   :config
+;;   (global-set-key (kbd "s-|") 'powerthesaurus-lookup-word-dwim))
+
+;; Word definition
+(use-package define-word
+  :config
+  (global-set-key (kbd "M-\\") 'define-word-at-point))
 #+END_SRC
 * Org
 #+BEGIN_SRC emacs-lisp
@@ -394,168 +502,26 @@ But then it's being replaced by result of org file processing (tangling). Here b
 ;; Comment/uncomment line
 (global-set-key (kbd "s-/") 'comment-line)
 #+END_SRC
-** Terminal
-#+BEGIN_SRC emacs-lisp
-(use-package shell-pop)
-#+END_SRC
-* OLD Configurations
-** Windows
-
-I'm still not happy with the way new windows are spawned. For now, at least, let's make it so that new automatic windows are always created on the bottom, not on the side.
-
-#+BEGIN_SRC emacs-lisp
-(setq split-height-threshold 0)
-(setq split-width-threshold nil)
-#+END_SRC
-
-Move between windows with Control-Command-Arrow and with =Cmd= just like in iTerm.
-
-#+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "s-o") (kbd "C-x o"))
-
-(use-package windmove
-  :config
-  (global-set-key (kbd "s-[")  'windmove-left)         ;; Cmd+[ go to left window
-  (global-set-key (kbd "s-]")  'windmove-right)        ;; Cmd+] go to right window
-  (global-set-key (kbd "s-{")  'windmove-up)           ;; Cmd+Shift+[ go to upper window
-  (global-set-key (kbd "<s-}>")  'windmove-down))      ;; Ctrl+Shift+[ go to down window
-#+END_SRC
-
-Enable winner mode to quickly restore window configurations
-
-#+BEGIN_SRC emacs-lisp
-(winner-mode 1)
-#+END_SRC
-
-Shackle to make sure all windows are nicely positioned.
-
-#+BEGIN_SRC emacs-lisp
-(use-package shackle
-  :init
-  (setq shackle-default-alignment 'below
-        shackle-default-size 0.4
-        shackle-rules '((help-mode           :align below :select t)
-                        (helpful-mode        :align below)
-                        (compilation-mode    :select t   :size 0.25)
-                        ("*compilation*"     :select nil :size 0.25)
-                        ("*ag search*"       :select nil :size 0.25)
-                        ("*Flycheck errors*" :select nil :size 0.25)
-                        ("*Warnings*"        :select nil :size 0.25)
-                        ("*Error*"           :select nil :size 0.25)
-                        ("*Org Links*"       :select nil :size 0.1)
-                        (magit-status-mode                :align bottom :size 0.5  :inhibit-window-quit t)
-                        (magit-log-mode                   :same t                  :inhibit-window-quit t)
-                        (magit-commit-mode                :ignore t)
-                        (magit-diff-mode     :select nil  :align left   :size 0.5)
-                        (git-commit-mode                  :same t)
-                        (vc-annotate-mode                 :same t)
-                        ))
-  :config
-  (shackle-mode 1))
-#+END_SRC
-** Edit indirect
-
-Select any region and edit it in another buffer.
-
-#+BEGIN_SRC emacs-lisp
-(use-package edit-indirect)
-#+END_SRC
-** Ivy, Swiper and Counsel
-
-#+BEGIN_SRC emacs-lisp
-(use-package ivy
-  :config
-  (ivy-mode 1)
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-count-format "(%d/%d) ")
-  (setq enable-recursive-minibuffers t)
-  (setq ivy-initial-inputs-alist nil)
-  (setq ivy-re-builders-alist
-      '((swiper . ivy--regex-plus)
-        (swiper-isearch . ivy--regex-plus)
-        (counsel-ag . ivy--regex-plus)
-        (counsel-rg . ivy--regex-plus)
-        (t      . ivy--regex-fuzzy)))   ;; enable fuzzy searching everywhere except for Swiper and ag
-
-  (global-set-key (kbd "s-b") 'ivy-switch-buffer))
-
-(use-package swiper
-  :config
-  (global-set-key (kbd "s-f") 'swiper-isearch))
-
-(use-package counsel
-  :config
-  (global-set-key (kbd "M-x") 'counsel-M-x)
-  (global-set-key (kbd "s-y") 'counsel-yank-pop)
-  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-  (global-set-key (kbd "s-F") 'counsel-rg)
-  (global-set-key (kbd "s-p") 'counsel-git))
-
-;; When using git ls (via counsel-git), include unstaged files
-(setq counsel-git-cmd "git ls-files --full-name --exclude-standard --others --cached --")
-
-(use-package smex)
-(use-package flx)
-#+END_SRC
 ** Git
-
-It's time for Magit!
-
 #+BEGIN_SRC emacs-lisp
 (use-package magit
   :config
   (global-set-key (kbd "s-g") 'magit-status))
-#+END_SRC
 
-Navigate to projects with Cmd+Shift+P (thanks to reddit user and emacscast listener fritzgrabo).
-
-#+BEGIN_SRC emacs-lisp
-(setq magit-repository-directories '(("\~/code" . 4) ("\~/Google Drive/Codexpanse/Course materials" . 3)))
-
+;; Bind Cmd+Shift+p to switch between repos
+(setq magit-repository-directories '(("\~" . 4)))
 (defun magit-status-with-prefix-arg ()
   "Call `magit-status` with a prefix."
   (interactive)
   (let ((current-prefix-arg '(4)))
     (call-interactively #'magit-status)))
-
 (global-set-key (kbd "s-P") 'magit-status-with-prefix-arg)
 #+END_SRC
-** Spell checking
-
-Spell checking requires an external command to be available. Install =aspell= on your Mac, then make it the default checker for Emacs' =ispell=. Note that personal dictionary is located at =~/.aspell.LANG.pws= by default.
-
+** Terminal
 #+BEGIN_SRC emacs-lisp
-(setq ispell-program-name "aspell")
+(use-package shell-pop)
 #+END_SRC
-
-Enable spellcheck on the fly for all text modes. This includes org, latex and LaTeX.
-
-#+BEGIN_SRC emacs-lisp
-(add-hook 'text-mode-hook 'flyspell-mode)
-#+END_SRC
-
-Spellcheck current word.
-
-#+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "s-\\") 'ispell-word)
-#+END_SRC
-** Thesaurus
-
-Spellcheck was =Cmd+\=, synonym search is =Cmd+Shift+\=.
-
-#+BEGIN_SRC emacs-lisp
-;; (use-package powerthesaurus
-;;   :config
-;;   (global-set-key (kbd "s-|") 'powerthesaurus-lookup-word-dwim))
-#+END_SRC
-
-Word definition search.
-
-#+BEGIN_SRC emacs-lisp
-(use-package define-word
-  :config
-  (global-set-key (kbd "M-\\") 'define-word-at-point))
-#+END_SRC
+* OLD Configurations
 ** Abbrev
 
 #+BEGIN_SRC emacs-lisp
