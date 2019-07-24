@@ -7,15 +7,10 @@
 
 * Credits
 Based on [[https://github.com/freetonik/emacs-dotfiles][Rakhim's config]]. Check out [[https://github.com/freetonik/emacscast][EmacsCast]], his podcast about Emacs.
-
 * Installing
-
 ** Emacs
-
 This config works best with this [[https://emacsformacosx.com/][https://emacsformacosx.com/]].
-
 ** Dependencies
-
 Few utils needed.
 
 #+BEGIN_SRC sh :tangle no
@@ -23,11 +18,7 @@ brew install ripgrep # TODO: Why?
 brew cask install mactex # TODO: Why?
 brew install aspell # Spell checker
 #+END_SRC
-
 ** Config
-
-I think it'll be better not to clone and use this config as is, but rather build your own config using mine as a starting point.
-
 Make a backup of your old =.emacs.d=:
 
 #+BEGIN_SRC sh :tangle no
@@ -53,25 +44,17 @@ If one wishes to make changes to the repo-version of =init.el= start tracking ag
 #+BEGIN_SRC sh :tangle no
 git update-index --no-assume-unchanged init.el
 #+END_SRC
-
-* Configurations
-
-** Meta
-
+* General
+** Load config
 When this configuration is loaded for the first time, the =init.el= is the file that is loaded. It looks like this:
 
 #+BEGIN_SRC emacs-lisp :tangle no
 ;; This file replaces itself with the actual configuration at first run.
 
-;; We can't tangle without org!
 (require 'org)
-;; Open the configuration
 (find-file (concat user-emacs-directory "init.org"))
-;; tangle it
 (org-babel-tangle)
-;; load it
 (load-file (concat user-emacs-directory "init.el"))
-;; finally byte-compile it
 (byte-compile-file (concat user-emacs-directory "init.el"))
 #+END_SRC
 
@@ -86,7 +69,7 @@ Tangle and compile this file on save automatically:
 #+BEGIN_SRC emacs-lisp
 (defun tangle-init ()
   "If the current buffer is 'init.org' the code-blocks are
-tangled, and the tangled file is compiled."
+   tangled, and the tangled file is compiled."
   (when (equal (buffer-file-name)
                (expand-file-name (concat user-emacs-directory "init.org")))
     ;; Avoid running hooks when tangling.
@@ -103,9 +86,7 @@ This helps get rid of =functions might not be defined at runtime= warnings. See 
 (eval-when-compile
   (setq use-package-expand-minimally byte-compile-current-file))
 #+END_SRC
-
 ** Package management
-
 Initialize package and add Melpa source.
 
 #+BEGIN_SRC emacs-lisp
@@ -113,12 +94,9 @@ Initialize package and add Melpa source.
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                  (not (gnutls-available-p))))
     (proto (if no-ssl "http" "https")))
-    ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
     (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
     ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
-    (when (< emacs-major-version 24)
-    ;; For important compatibility libraries like cl-lib
-(add-to-list 'package-archives '("gnu" . (concat proto "://elpa.gnu.org/packages/")))))
+    )
 (package-initialize)
 #+END_SRC
 
@@ -133,69 +111,77 @@ Install use-package.
 
 (setq use-package-always-ensure t)
 #+END_SRC
-
 ** Modifier keys
-
-Emacs control is Ctrl. Emacs Super is Command. Emacs Meta is Alt.
-Right Alt (option) can be used to enter symbols like em dashes =—=.
-
 #+BEGIN_SRC emacs-lisp
 (setq mac-command-modifier 'super)
 (setq mac-right-command-modifier 'super)
 (setq mac-option-modifier 'meta)
 (setq mac-left-option-modifier 'meta)
+;; Right Alt (option) can be used to enter symbols like em dashes =—=.
 (setq mac-right-option-modifier 'nil)
 #+END_SRC
-
-** Visuals
-
-I've tried many 3rd party themes, but keep coming back to the default light theme.
-
+** Emacs application
 #+BEGIN_SRC emacs-lisp
-(load-theme 'tsdh-light)
-(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-(add-to-list 'default-frame-alist '(ns-appearance . light))
+(setq
+ inhibit-startup-message t         ; Don't show the startup message
+ inhibit-startup-screen t          ; or screen
+ initial-scratch-message nil       ; Empty scratch buffer
+ confirm-kill-emacs 'y-or-n-p      ; y and n instead of yes and no when quitting
+ column-number-mode t              ; show columns in addition to rows in mode line
+)
+
+(fset 'yes-or-no-p 'y-or-n-p)      ; y and n instead of yes and no everywhere else
+(scroll-bar-mode -1)               ; ???
+(tool-bar-mode -1)                 ; Disable toolbar
+
+(add-to-list 'default-frame-alist '(ns-appearance . light)) ; ???
+
+;; Initial window size
+(setq initial-frame-alist '((width . 150) (height . 40)))
+
+;; Window title
+(setq-default frame-title-format "%f")
 #+END_SRC
-
-Inconsolata font, remove the cruft and make the initial size bigger.
-
+** Files
 #+BEGIN_SRC emacs-lisp
+;; Turn off backups
+(setq
+ make-backup-files nil  ; stop creating backup~ files
+ auto-save-default nil  ; stop creating #autosave# files
+ create-lockfiles nil)  ; stop creating .# files
+
+;; Update buffers automatically when underlying files are changed externally.
+(global-auto-revert-mode t)
+#+END_SRC
+** Editor
+#+BEGIN_SRC emacs-lisp
+(setq
+ echo-keystrokes 0.1               ; Show keystrokes right away, don't show the message in the scratch buffer
+ sentence-end-double-space nil     ; Sentences should end in one space, come on!
+ cursor-in-non-selected-windows t  ; Hide the cursor in inactive windows
+ )
+
+(blink-cursor-mode 0)     ; Disable blinking cursor
+(delete-selection-mode 1) ; ???
+
+;; Visual lines.
+;; Wrap long lines and navigate by visual lines that you see on screen, not logical lines in file.
+(global-visual-line-mode t)
+
 (set-face-attribute 'default nil :font "Inconsolata LGC 14")
 (setq-default line-spacing 0)
-(setq initial-frame-alist '((width . 150) (height . 40)))
-(tool-bar-mode -1)
-#+END_SRC
 
-Matching parenthesis appearance.
+;; I want Emacs kill ring and system clipboard to be independent. Simpleclip is the solution to that.
+(use-package simpleclip
+  :config
+  (simpleclip-mode 1))
 
-#+BEGIN_SRC emacs-lisp
+;; Matching parenthesis
 (set-face-background 'show-paren-match "grey84")
 (set-face-attribute 'show-paren-match nil :weight 'extra-bold)
 (show-paren-mode)
-#+END_SRC
 
-Wrap lines always.
-
-#+BEGIN_SRC emacs-lisp
-;; (global-visual-line-mode 1)
-(setq org-startup-truncated nil)
-#+END_SRC
-
-Nice and simple mode line.
-
-#+BEGIN_SRC emacs-lisp
-(setq column-number-mode t) ;; show columns in addition to rows in mode line
-#+END_SRC
-
-Show full path in the title bar.
-
-#+BEGIN_SRC emacs-lisp
-(setq-default frame-title-format "%f")
-#+END_SRC
-
-Never use tabs, use spaces instead.
-
-#+BEGIN_SRC emacs-lisp
+;; Indentations
 (setq-default indent-tabs-mode nil)
 (setq tab-width 2)
 (setq js-indent-level 2)
@@ -205,63 +191,7 @@ Never use tabs, use spaces instead.
 (setq-default tab-width 2)
 (setq-default c-basic-indent 2)
 #+END_SRC
-
-Disable blinking cursor.
-
-#+BEGIN_SRC emacs-lisp
-(blink-cursor-mode 0)
-#+END_SRC
-
-Visual lines.
-
-#+BEGIN_SRC emacs-lisp
-(global-visual-line-mode t)
-#+END_SRC
-
-** Sane defaults
-
-I don't care about auto save and backup files.
-
-#+BEGIN_SRC emacs-lisp
-(setq make-backup-files nil) ; stop creating backup~ files
-(setq auto-save-default nil) ; stop creating #autosave# files
-(setq create-lockfiles nil)  ; stop creating .# files
-#+END_SRC
-
-Revert (update) buffers automatically when underlying files are changed externally.
-
-#+BEGIN_SRC emacs-lisp
-(global-auto-revert-mode t)
-#+END_SRC
-
-Some basic things.
-
-#+BEGIN_SRC emacs-lisp
-(setq
- inhibit-startup-message t         ; Don't show the startup message
- inhibit-startup-screen t          ; or screen
- cursor-in-non-selected-windows t  ; Hide the cursor in inactive windows
-
- echo-keystrokes 0.1               ; Show keystrokes right away, don't show the message in the scratch buffer
- initial-scratch-message nil       ; Empty scratch buffer
- sentence-end-double-space nil     ; Sentences should end in one space, come on!
- confirm-kill-emacs 'y-or-n-p      ; y and n instead of yes and no when quitting
-)
-
-(fset 'yes-or-no-p 'y-or-n-p)      ; y and n instead of yes and no everywhere else
-(scroll-bar-mode -1)
-(delete-selection-mode 1)
-(global-unset-key (kbd "s-p"))
-#+END_SRC
-
-I want Emacs kill ring and system clipboard to be independent. Simpleclip is the solution to that.
-
-#+BEGIN_SRC emacs-lisp
-(use-package simpleclip
-  :config
-  (simpleclip-mode 1))
-#+END_SRC
-
+* Configurations
 ** OS integration
 
 Pass system shell environment to Emacs. This is important primarily for shell inside Emacs, but also things like Org mode export to Tex PDF don't work, since it relies on running external command =pdflatex=, which is loaded from =PATH=.
@@ -278,7 +208,6 @@ A nice little real terminal in a popup.
 #+BEGIN_SRC emacs-lisp
 (use-package shell-pop)
 #+END_SRC
-
 ** Navigation and editing
 
 Kill line with =s-Backspace=, which is =Cmd-Backspace=. Note that thanks to Simpleclip, killing doesn't rewrite the system clipboard. Kill one word by =Alt-Backspace=. Also, kill forward word with =Alt-Shift-Backspace=, since =Alt-Backspace= is kill word backwards.
@@ -423,7 +352,7 @@ Join lines whether you're in a region or not.
   (interactive)
   (delete-indentation 1))
 
-(defun join-region (beg end)
+(defun join-region (_beg _end)
   "Join all the lines in the region."
   (interactive "r")
   (if mark-active
@@ -474,7 +403,6 @@ Comment lines.
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "s-/") 'comment-line)
 #+END_SRC
-
 ** Windows
 
 I'm still not happy with the way new windows are spawned. For now, at least, let's make it so that new automatic windows are always created on the bottom, not on the side.
@@ -529,7 +457,6 @@ Shackle to make sure all windows are nicely positioned.
   :config
   (shackle-mode 1))
 #+END_SRC
-
 ** Edit indirect
 
 Select any region and edit it in another buffer.
@@ -537,7 +464,6 @@ Select any region and edit it in another buffer.
 #+BEGIN_SRC emacs-lisp
 (use-package edit-indirect)
 #+END_SRC
-
 ** Ivy, Swiper and Counsel
 
 #+BEGIN_SRC emacs-lisp
@@ -575,7 +501,6 @@ Select any region and edit it in another buffer.
 (use-package smex)
 (use-package flx)
 #+END_SRC
-
 ** Git
 
 It's time for Magit!
@@ -599,7 +524,6 @@ Navigate to projects with Cmd+Shift+P (thanks to reddit user and emacscast liste
 
 (global-set-key (kbd "s-P") 'magit-status-with-prefix-arg)
 #+END_SRC
-
 ** Spell checking
 
 Spell checking requires an external command to be available. Install =aspell= on your Mac, then make it the default checker for Emacs' =ispell=. Note that personal dictionary is located at =~/.aspell.LANG.pws= by default.
@@ -619,7 +543,6 @@ Spellcheck current word.
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "s-\\") 'ispell-word)
 #+END_SRC
-
 ** Thesaurus
 
 Spellcheck was =Cmd+\=, synonym search is =Cmd+Shift+\=.
@@ -637,7 +560,6 @@ Word definition search.
   :config
   (global-set-key (kbd "M-\\") 'define-word-at-point))
 #+END_SRC
-
 ** Abbrev
 
 #+BEGIN_SRC emacs-lisp
@@ -650,7 +572,6 @@ Word definition search.
     ("ra" "→" )
     ))
 #+END_SRC
-
 ** Auto completion
 
 #+BEGIN_SRC emacs-lisp
@@ -661,7 +582,6 @@ Word definition search.
   (setq company-minimum-prefix-length 1)
   (add-hook 'after-init-hook 'global-company-mode))
 #+END_SRC
-
 ** Markdown
 
 While I prefer Org, I still need to be able to work with Markdown efficiently. Here's a good package and "Cmd-O" to copy raw HTML to clipboard.
@@ -685,13 +605,11 @@ While I prefer Org, I still need to be able to work with Markdown efficiently. H
   `(define-key markdown-mode-map (kbd "s-O") (lambda ()
                                                (interactive)
                                                (markdown-kill-ring-save)
-                                               (let ((oldbuf (current-buffer)))
-                                                 (save-current-buffer
-                                                   (set-buffer "*markdown-output*")
-                                                   (with-no-warnings (mark-whole-buffer))
-                                                   (simpleclip-copy (point-min) (point-max)))))))
+                                               (save-current-buffer
+                                                 (set-buffer "*markdown-output*")
+                                                 (with-no-warnings (mark-whole-buffer))
+                                                 (simpleclip-copy (point-min) (point-max))))))
 #+END_SRC
-
 ** Packages for programming
 
 Here are all the packages needed for programming languages and formats.
@@ -723,21 +641,27 @@ Clojure.
 (use-package cider)
 
 (use-package clj-refactor)
-(defun my-clojure-mode-hook ()
-    (clj-refactor-mode 1)
-    (yas-minor-mode 1) ; for adding require/use/import statements
-    ;; This choice of keybinding leaves cider-macroexpand-1 unbound
-    (cljr-add-keybindings-with-prefix "C-c C-m"))
-(add-hook 'clojure-mode-hook #'my-clojure-mode-hook)
+(add-hook 'clojure-mode-hook
+          (lambda ()
+            (clj-refactor-mode 1)
+            (yas-minor-mode 1) ; for adding require/use/import statements
+            ;; This choice of keybinding leaves cider-macroexpand-1 unbound
+            (cljr-add-keybindings-with-prefix "C-c C-m")))
 #+END_SRC
 
 Web mode.
 
 #+BEGIN_SRC emacs-lisp
 (use-package web-mode
-  :mode ("\\.html\\'")
+  :mode ("\\.html\\'" "\\.js\\'" "\\.jsx\\'" "\\.css\\'")
   :config
   (setq web-mode-markup-indent-offset 2))
+
+(add-hook 'web-mode-hook
+          (lambda ()
+            ;; short circuit js mode and just do everything in jsx-mode
+            (if (equal web-mode-content-type "javascript")
+                (web-mode-set-content-type "jsx"))))
 #+END_SRC
 
 Emmet.
@@ -755,6 +679,19 @@ Emmet.
   (add-hook 'css-mode-hook  'emmet-mode)) ;; enable Emmet's css abbreviation.
 #+END_SRC
 
+Rust.
+
+#+BEGIN_SRC emacs-lisp
+(use-package rust-mode
+  :config
+  (setq rust-format-on-save t))
+#+END_SRC
+
+Go.
+
+#+BEGIN_SRC emacs-lisp
+(use-package go-mode)
+#+END_SRC
 ** Frames, windows, buffers
 
 Always open files in the same frame, even when double-clicked from Finder.
@@ -770,7 +707,6 @@ Handy killall command.
   (interactive)
   (mapc 'kill-buffer (buffer-list)))
 #+END_SRC
-
 ** Which key
 
 This is great for learning Emacs, it shows a nice table of possible commands.
@@ -781,15 +717,13 @@ This is great for learning Emacs, it shows a nice table of possible commands.
   (which-key-mode)
   (setq which-key-idle-delay 0.5))
 #+END_SRC
-
 * Org
-
-Visually indent sections. This looks better for smaller files.
-
 #+BEGIN_SRC emacs-lisp
 (use-package org
   :config
-  (setq org-startup-indented t))
+  (setq org-startup-indented t)    ; Visually indent sections
+  (setq org-startup-truncated nil) ; Do not truncate long lines
+)
 #+END_SRC
 
 Set directory for ORG files.
@@ -846,7 +780,7 @@ Quickly open todo and config files.
 
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "\e\ec") (lambda () (interactive) (find-file "~/.emacs.d/init.org")))
-(global-set-key (kbd "\e\ej") (lambda () (interactive) (find-file "~/OneDrive/org/journal.org")))
+(global-set-key (kbd "\e\ei") (lambda () (interactive) (find-file "~/OneDrive/org/ideas.org")))
 (global-set-key (kbd "\e\ef") (lambda () (interactive) (counsel-rg nil "~/OneDrive/org")))
 #+END_SRC
 
@@ -872,8 +806,10 @@ Consider switching meta-left/right to =C-c C-,= and =C-c C-.=. These are used to
 
 #+BEGIN_SRC emacs-lisp
 ;; no shift or alt with arrows
-(define-key org-mode-map (kbd "<S-left>") nil)
-(define-key org-mode-map (kbd "<S-right>") nil)
+(define-key org-mode-map (kbd "S-<up>") nil)
+(define-key org-mode-map (kbd "S-<down>") nil)
+(define-key org-mode-map (kbd "S-<left>") nil)
+(define-key org-mode-map (kbd "S-<right>") nil)
 (define-key org-mode-map (kbd "<M-left>") nil)
 (define-key org-mode-map (kbd "<M-right>") nil)
 ;; no shift-alt with arrows
@@ -896,8 +832,7 @@ Narrow and widen with =Cmd+Ctrl+Up/Down=.
 (define-key org-mode-map (kbd "C-s-<down>") 'org-narrow-to-subtree)
 (define-key org-mode-map (kbd "C-s-<up>") 'widen)
 #+END_SRC
-
-* Server
+* Emacs server
 
 Start an Emacs server. This way, I can use emacsclient from the terminal.
 
