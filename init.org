@@ -319,6 +319,60 @@ But then it's being replaced by result of org file processing (tangling). Here b
 (global-set-key (kbd "s-w") (kbd "C-x 0")) ; close current (like in browser)
 (global-set-key (kbd "s-W") (kbd "C-x 1")) ; close all others
 #+END_SRC
+* Org
+#+BEGIN_SRC emacs-lisp
+(use-package org
+  :config
+  (setq
+   org-startup-indented t    ; Visually indent sections
+   org-startup-truncated nil ; Do not truncate long lines
+   org-directory      "~/OneDrive/org"
+   org-agenda-files '("~/OneDrive/org")
+   org-refile-targets (quote ((nil :maxlevel . 9)
+                              (org-agenda-files :maxlevel . 9)))
+   org-support-shift-select t     ; Allow shift selection with arrows
+   org-src-tab-acts-natively t    ; Native tab behaviour for code blocks
+   org-src-preserve-indentation t ; Native indentation for code blocks
+   org-src-fontify-natively t     ; Native fonts for code blocks
+   org-log-into-drawer t          ; State changes for todos and also notes should go into a Logbook drawer
+   org-log-done 'time             ; Add closed date when todo goes to DONE state
+   org-use-speed-commands t       ; Enable speed keys to manage headings without arrows (???)
+   org-cycle-separator-lines 1    ; ???
+   ))
+
+;; <el<TAB> - insert snippet of elisp enclosure
+(eval-after-load 'org
+  '(progn
+     (add-to-list 'org-structure-template-alist '("el" "#+BEGIN_SRC emacs-lisp \n?\n#+END_SRC"))
+     (define-key org-mode-map (kbd "C-'") nil)
+     (global-set-key "\C-ca" 'org-agenda)))
+
+;; Quick files
+(global-set-key (kbd "\e\ec") (lambda () (interactive) (find-file "~/.emacs.d/init.org")))
+(global-set-key (kbd "\e\ei") (lambda () (interactive) (find-file "~/OneDrive/org/ideas.org")))
+(global-set-key (kbd "\e\ef") (lambda () (interactive) (counsel-rg nil "~/OneDrive/org")))
+
+;; ???
+(global-set-key (kbd "C-c c") 'org-capture)
+
+;; Disable some arrors-related bindings to enforce native behaviour
+(define-key org-mode-map (kbd "S-<up>") nil)
+(define-key org-mode-map (kbd "S-<down>") nil)
+(define-key org-mode-map (kbd "S-<left>") nil)
+(define-key org-mode-map (kbd "S-<right>") nil)
+(define-key org-mode-map (kbd "<M-left>") nil)
+(define-key org-mode-map (kbd "<M-right>") nil)
+(define-key org-mode-map (kbd "<M-S-left>") nil)
+(define-key org-mode-map (kbd "<M-S-right>") nil)
+
+;; ???
+(define-key org-mode-map (kbd "C-s-<left>") 'org-metaleft)
+(define-key org-mode-map (kbd "C-s-<right>") 'org-metaright)
+
+;; Focus on current subtree (hide/unhide everything else)
+(define-key org-mode-map (kbd "C-s-<down>") 'org-narrow-to-subtree)
+(define-key org-mode-map (kbd "C-s-<up>") 'widen)
+#+END_SRC
 * Programming
 ** General
 #+BEGIN_SRC emacs-lisp
@@ -344,13 +398,7 @@ But then it's being replaced by result of org file processing (tangling). Here b
 #+BEGIN_SRC emacs-lisp
 (use-package shell-pop)
 #+END_SRC
-* Configurations
-** Navigation and editing
-
-Multiple cusors are a must. Make <return> insert a newline; multiple-cursors-mode can still be disabled with C-g.
-
-#+BEGIN_SRC emacs-lisp
-#+END_SRC
+* OLD Configurations
 ** Windows
 
 I'm still not happy with the way new windows are spawned. For now, at least, let's make it so that new automatic windows are always created on the bottom, not on the side.
@@ -665,124 +713,8 @@ This is great for learning Emacs, it shows a nice table of possible commands.
   (which-key-mode)
   (setq which-key-idle-delay 0.5))
 #+END_SRC
-* Org
-#+BEGIN_SRC emacs-lisp
-(use-package org
-  :config
-  (setq org-startup-indented t)    ; Visually indent sections
-  (setq org-startup-truncated nil) ; Do not truncate long lines
-)
-#+END_SRC
-
-Set directory for ORG files.
-
-#+BEGIN_SRC emacs-lisp
-(setq org-directory "~/OneDrive/org")
-#+END_SRC
-
-And all of those files should be in included agenda.
-
-#+BEGIN_SRC emacs-lisp
-(setq org-agenda-files '("~/OneDrive/org"))
-#+END_SRC
-
-Refile targets should include files and down to 9 levels into them.
-
-#+BEGIN_SRC emacs-lisp
-(setq org-refile-targets (quote ((nil :maxlevel . 9)
-                                 (org-agenda-files :maxlevel . 9))))
-
-#+END_SRC
-
-Allow shift selection with arrows. This will not interfere with some built-in shift+arrow functionality in Org.
-
-#+BEGIN_SRC emacs-lisp
-(setq org-support-shift-select t)
-#+END_SRC
-
-While writing this configuration file in Org mode, I have to write code blocks all the time. Org has templates, so doing =<s TAB= creates a source code block. Here I create a custom template for emacs-lisp specifically. So, =<el TAB= creates the Emacs lisp code block and puts the cursor inside.
-
-#+BEGIN_SRC emacs-lisp
-(eval-after-load 'org
-  '(progn
-    (add-to-list 'org-structure-template-alist '("el" "#+BEGIN_SRC emacs-lisp \n?\n#+END_SRC"))
-    (define-key org-mode-map (kbd "C-'") nil)
-    (global-set-key "\C-ca" 'org-agenda)))
-#+END_SRC
-
-And inside those code blocks indentation should be correct depending on the source language used and have code highlighting.
-
-#+BEGIN_SRC emacs-lisp
-(setq org-src-tab-acts-natively t)
-(setq org-src-preserve-indentation t)
-(setq org-src-fontify-natively t)
-#+END_SRC
-
-State changes for todos and also notes should go into a Logbook drawer:
-
-#+BEGIN_SRC emacs-lisp
-(setq org-log-into-drawer t)
-#+END_SRC
-
-Quickly open todo and config files.
-
-#+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "\e\ec") (lambda () (interactive) (find-file "~/.emacs.d/init.org")))
-(global-set-key (kbd "\e\ei") (lambda () (interactive) (find-file "~/OneDrive/org/ideas.org")))
-(global-set-key (kbd "\e\ef") (lambda () (interactive) (counsel-rg nil "~/OneDrive/org")))
-#+END_SRC
-
-Org capture.
-
-#+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "C-c c") 'org-capture)
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp
-(setq org-cycle-separator-lines 1)
-#+END_SRC
-
-Add closed date when todo goes to DONE state.
-
-#+BEGIN_SRC emacs-lisp
-(setq org-log-done 'time)
-#+END_SRC
-
-Not sure about this... I want to retain Shift-Alt movement and selection everywhere, but in Org mode these bindings are important built ins, and I don't know if there is a viable alternative.
-
-Consider switching meta-left/right to =C-c C-,= and =C-c C-.=. These are used to promote and demote subtrees.
-
-#+BEGIN_SRC emacs-lisp
-;; no shift or alt with arrows
-(define-key org-mode-map (kbd "S-<up>") nil)
-(define-key org-mode-map (kbd "S-<down>") nil)
-(define-key org-mode-map (kbd "S-<left>") nil)
-(define-key org-mode-map (kbd "S-<right>") nil)
-(define-key org-mode-map (kbd "<M-left>") nil)
-(define-key org-mode-map (kbd "<M-right>") nil)
-;; no shift-alt with arrows
-(define-key org-mode-map (kbd "<M-S-left>") nil)
-(define-key org-mode-map (kbd "<M-S-right>") nil)
-
-(define-key org-mode-map (kbd "C-s-<left>") 'org-metaleft)
-(define-key org-mode-map (kbd "C-s-<right>") 'org-metaright)
-#+END_SRC
-
-Enable speed keys to manage headings without arrows.
-
-#+BEGIN_SRC emacs-lisp
-(setq org-use-speed-commands t)
-#+END_SRC
-
-Narrow and widen with =Cmd+Ctrl+Up/Down=.
-
-#+BEGIN_SRC emacs-lisp
-(define-key org-mode-map (kbd "C-s-<down>") 'org-narrow-to-subtree)
-(define-key org-mode-map (kbd "C-s-<up>") 'widen)
-#+END_SRC
-* Emacs server
-
-Start an Emacs server. This way, I can use emacsclient from the terminal.
+* Server
+Start an Emacs server. This way, it is possible to use emacsclient from the terminal.
 
 #+BEGIN_SRC emacs-lisp
 (unless (server-running-p) (server-start))
