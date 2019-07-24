@@ -13,7 +13,7 @@ This config works best with [[https://emacsformacosx.com/][https://emacsformacos
 Few utils needed.
 
 #+BEGIN_SRC sh :tangle no
-brew install ripgrep # TODO: Why?
+brew install ripgrep # For dumb-jump
 brew cask install mactex # TODO: Why?
 brew install aspell # Spell checker
 #+END_SRC
@@ -156,6 +156,38 @@ But then it's being replaced by result of org file processing (tangling). Here b
 ;; Ensure there is new line at the end of file
 (setq require-final-newline t)
 #+END_SRC
+** Writing
+#+BEGIN_SRC emacs-lisp
+;; Set external spell checking command
+(setq ispell-program-name "aspell")
+
+;; Enable spellcheck on the fly for all text modes. This includes org, latex and LaTeX.
+(add-hook 'text-mode-hook 'flyspell-mode)
+
+;; Spellcheck current word.
+(global-set-key (kbd "s-\\") 'ispell-word)
+
+;; Search synonyms for the word
+;; (use-package powerthesaurus
+;;   :config
+;;   (global-set-key (kbd "s-|") 'powerthesaurus-lookup-word-dwim))
+
+;; Word definition
+(use-package define-word
+  :config
+  (global-set-key (kbd "M-\\") 'define-word-at-point))
+
+;; Expand abbreviations
+;; TODO: Fill the dictionary
+(clear-abbrev-table global-abbrev-table)
+(define-abbrev-table 'global-abbrev-table
+  '(
+    ("afaik" "as far as i know" )
+    ("em" "—")
+    ("ra" "→" )
+    ))
+(abbrev-mode 1)
+#+END_SRC
 ** Editing
 #+BEGIN_SRC emacs-lisp
 (setq
@@ -296,8 +328,58 @@ But then it's being replaced by result of org file processing (tangling). Here b
   (global-set-key (kbd "s-'") 'er/expand-region)
   (global-set-key (kbd "s-\"") 'er/contract-region))
 #+END_SRC
+** Search
+#+BEGIN_SRC emacs-lisp
+;; Generic completion library
+(use-package ivy
+  :config
+  (ivy-mode 1)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-count-format "(%d/%d) ")
+  (setq enable-recursive-minibuffers t)
+  (setq ivy-initial-inputs-alist nil)
+  (setq ivy-re-builders-alist
+      '((swiper         . ivy--regex-plus)
+        (swiper-isearch . ivy--regex-plus)
+        (counsel-ag     . ivy--regex-plus)
+        (counsel-rg     . ivy--regex-plus)
+        (t              . ivy--regex-fuzzy))) ; enable fuzzy searching everywhere except for Swiper and ag
+
+  (global-set-key (kbd "s-b") 'ivy-switch-buffer))
+
+;; Search inside file
+(use-package swiper
+  :config
+  (global-set-key (kbd "s-f") 'swiper-isearch))
+
+;; Replace with nice visual feedback
+(use-package visual-regexp
+  :config
+  (define-key global-map (kbd "s-r") 'vr/replace))
+
+;; Boost some standard emacs with ivy completion
+(use-package counsel
+  :config
+  (global-set-key (kbd "M-x")     'counsel-M-x)
+  (global-set-key (kbd "s-y")     'counsel-yank-pop)
+  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+  (global-set-key (kbd "s-F")     'counsel-rg)
+  (global-set-key (kbd "s-p")     'counsel-git))
+
+;; When using git ls (via counsel-git), include unstaged files
+(setq counsel-git-cmd "git ls-files --full-name --exclude-standard --others --cached --")
+
+;; M-x enchancer, displays most frequently used commands first
+(use-package smex)
+
+;; Fuzzy matching engine
+(use-package flx)
+#+END_SRC
 ** Windows
 #+BEGIN_SRC emacs-lisp
+;; Always open files in the same frame, even when double-clicked from Finder.
+(setq ns-pop-up-frames nil)
+
 ;; Split
 (defun vsplit-last-buffer ()
   (interactive)
@@ -358,74 +440,32 @@ But then it's being replaced by result of org file processing (tangling). Here b
                         ))
   :config
   (shackle-mode 1))
+
+;; Kill all buffers
+(defun kill-all-buffers ()
+  (interactive)
+  (mapc 'kill-buffer (buffer-list)))
 #+END_SRC
-** Search
+** Server
 #+BEGIN_SRC emacs-lisp
-;; Generic completion library
-(use-package ivy
-  :config
-  (ivy-mode 1)
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-count-format "(%d/%d) ")
-  (setq enable-recursive-minibuffers t)
-  (setq ivy-initial-inputs-alist nil)
-  (setq ivy-re-builders-alist
-      '((swiper         . ivy--regex-plus)
-        (swiper-isearch . ivy--regex-plus)
-        (counsel-ag     . ivy--regex-plus)
-        (counsel-rg     . ivy--regex-plus)
-        (t              . ivy--regex-fuzzy))) ; enable fuzzy searching everywhere except for Swiper and ag
-
-  (global-set-key (kbd "s-b") 'ivy-switch-buffer))
-
-;; Search inside file
-(use-package swiper
-  :config
-  (global-set-key (kbd "s-f") 'swiper-isearch))
-
-;; Replace with nice visual feedback
-(use-package visual-regexp
-  :config
-  (define-key global-map (kbd "s-r") 'vr/replace))
-
-;; Boost some standard emacs with ivy completion
-(use-package counsel
-  :config
-  (global-set-key (kbd "M-x")     'counsel-M-x)
-  (global-set-key (kbd "s-y")     'counsel-yank-pop)
-  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-  (global-set-key (kbd "s-F")     'counsel-rg)
-  (global-set-key (kbd "s-p")     'counsel-git))
-
-;; When using git ls (via counsel-git), include unstaged files
-(setq counsel-git-cmd "git ls-files --full-name --exclude-standard --others --cached --")
-
-;; M-x enchancer, displays most frequently used commands first
-(use-package smex)
-
-;; Fuzzy matching engine
-(use-package flx)
+;; Start an Emacs server. This way, it is possible to use emacsclient from the terminal.
+;;(unless (server-running-p) (server-start))
 #+END_SRC
-** Writing
-#+BEGIN_SRC emacs-lisp
-;; Set external spell checking command
-(setq ispell-program-name "aspell")
 
-;; Enable spellcheck on the fly for all text modes. This includes org, latex and LaTeX.
-(add-hook 'text-mode-hook 'flyspell-mode)
+To enable easy emacsclient, create =~/bin/ec=:
 
-;; Spellcheck current word.
-(global-set-key (kbd "s-\\") 'ispell-word)
-
-;; Search synonyms for the word
-;; (use-package powerthesaurus
-;;   :config
-;;   (global-set-key (kbd "s-|") 'powerthesaurus-lookup-word-dwim))
-
-;; Word definition
-(use-package define-word
+#+BEGIN_SRC sh :tangle no
+#!/bin/sh
+# this assumes that my regular emacs app runs the server as part of startup
+emacsclient -n "$@" || (open -a emacs "$@")
+#+END_SRC
+** Help
+#+BEGIN_SRC emacs-lisp :tangle no
+;; This is great for learning Emacs, it shows a nice table of possible commands.
+(use-package which-key
   :config
-  (global-set-key (kbd "M-\\") 'define-word-at-point))
+  (which-key-mode)
+  (setq which-key-idle-delay 0.5))
 #+END_SRC
 * Org
 #+BEGIN_SRC emacs-lisp
@@ -521,21 +561,7 @@ But then it's being replaced by result of org file processing (tangling). Here b
 #+BEGIN_SRC emacs-lisp
 (use-package shell-pop)
 #+END_SRC
-* OLD Configurations
-** Abbrev
-
-#+BEGIN_SRC emacs-lisp
-(clear-abbrev-table global-abbrev-table)
-
-(define-abbrev-table 'global-abbrev-table
-  '(
-    ("afaik" "as far as i know" )
-    ("em" "—")
-    ("ra" "→" )
-    ))
-#+END_SRC
 ** Auto completion
-
 #+BEGIN_SRC emacs-lisp
 (use-package company
   :config
@@ -544,25 +570,32 @@ But then it's being replaced by result of org file processing (tangling). Here b
   (setq company-minimum-prefix-length 1)
   (add-hook 'after-init-hook 'global-company-mode))
 #+END_SRC
+** Navigation
+#+BEGIN_SRC emacs-lisp
+;; Jump to definition
+;; Uses one of external commands: ag, ripgrep, rg, or grep
+(use-package dumb-jump
+  :config
+  (dumb-jump-mode))
+#+END_SRC
 ** Markdown
-
-While I prefer Org, I still need to be able to work with Markdown efficiently. Here's a good package and "Cmd-O" to copy raw HTML to clipboard.
-
 #+BEGIN_SRC emacs-lisp
 (use-package markdown-mode
-  :commands (markdown-mode gfm-mode)
   :mode (("README\\.md\\'" . gfm-mode)
-         ("\\.md\\'" . markdown-mode)
+         ("\\.md\\'"       . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
-  :init (setq markdown-command "pandoc"))
+  :init (setq markdown-command "pandoc")
+  :commands (markdown-mode gfm-mode))
 
+
+
+;; Focus mode like one in org
 (eval-after-load 'markdown-mode
   `(define-key markdown-mode-map (kbd "C-s-<down>") 'markdown-narrow-to-subtree))
-
 (eval-after-load 'markdown-mode
   `(define-key markdown-mode-map (kbd "C-s-<up>") 'widen))
 
-(require 'markdown-mode)
+;; ???
 (eval-after-load 'markdown-mode
   `(define-key markdown-mode-map (kbd "s-O") (lambda ()
                                                (interactive)
@@ -571,34 +604,20 @@ While I prefer Org, I still need to be able to work with Markdown efficiently. H
                                                  (set-buffer "*markdown-output*")
                                                  (with-no-warnings (mark-whole-buffer))
                                                  (simpleclip-copy (point-min) (point-max))))))
+
+(require 'markdown-mode)
 #+END_SRC
-** Packages for programming
-
-Here are all the packages needed for programming languages and formats.
-
-#+BEGIN_SRC emacs-lisp
-(use-package yaml-mode)
-(use-package dumb-jump
-  :config
-  (dumb-jump-mode))
-#+END_SRC
-
-LISP.
-
+** LISPs
 #+BEGIN_SRC emacs-lisp
 (use-package paredit
   :init
   (progn
-    (add-hook 'emacs-lisp-mode-hook 'paredit-mode)
-    (add-hook 'clojure-mode-hook 'paredit-mode)
+    (add-hook 'emacs-lisp-mode-hook    'paredit-mode)
+    (add-hook 'clojure-mode-hook       'paredit-mode)
     (add-hook 'clojurescript-mode-hook 'paredit-mode)
-    (add-hook 'clojurec-mode-hook 'paredit-mode)
-    (add-hook 'cider-repl-mode-hook 'paredit-mode)))
-#+END_SRC
+    (add-hook 'clojurec-mode-hook      'paredit-mode)
+    (add-hook 'cider-repl-mode-hook    'paredit-mode)))
 
-Clojure.
-
-#+BEGIN_SRC emacs-lisp
 (use-package clojure-mode)
 ;; (use-package cider)
 
@@ -610,86 +629,42 @@ Clojure.
 ;;             ;; This choice of keybinding leaves cider-macroexpand-1 unbound
 ;;             (cljr-add-keybindings-with-prefix "C-c C-m")))
 #+END_SRC
-
-Web mode.
-
+** Rust
+#+BEGIN_SRC emacs-lisp
+(use-package rust-mode
+  :config
+  (setq rust-format-on-save t))
+#+END_SRC
+** Go
+#+BEGIN_SRC emacs-lisp
+(use-package go-mode)
+#+END_SRC
+** Web
 #+BEGIN_SRC emacs-lisp
 (use-package web-mode
   :mode ("\\.html\\'" "\\.js\\'" "\\.jsx\\'" "\\.css\\'")
   :config
   (setq web-mode-markup-indent-offset 2))
 
+;; Use jsx instead of javascript syntax
 (add-hook 'web-mode-hook
           (lambda ()
-            ;; short circuit js mode and just do everything in jsx-mode
             (if (equal web-mode-content-type "javascript")
                 (web-mode-set-content-type "jsx"))))
-#+END_SRC
 
-Emmet.
-
-#+BEGIN_SRC emacs-lisp
+;; Rapid markup generation
 (use-package emmet-mode
-  :commands emmet-mode
   :init
   (setq emmet-indentation 2)
   (setq emmet-move-cursor-between-quotes t)
   :config
-  (add-hook 'sgml-mode-hook 'emmet-mode) ;; Auto-start on any markup modes
+  (add-hook 'sgml-mode-hook 'emmet-mode) ; Auto-start on any markup modes
   (add-hook 'web-mode-hook  'emmet-mode)
-  (add-hook 'html-mode-hook  'emmet-mode)
-  (add-hook 'css-mode-hook  'emmet-mode)) ;; enable Emmet's css abbreviation.
+  (add-hook 'html-mode-hook 'emmet-mode)
+  (add-hook 'css-mode-hook  'emmet-mode)
+  :commands emmet-mode)
 #+END_SRC
-
-Rust.
-
+** YAML
 #+BEGIN_SRC emacs-lisp
-(use-package rust-mode
-  :config
-  (setq rust-format-on-save t))
-#+END_SRC
-
-Go.
-
-#+BEGIN_SRC emacs-lisp
-(use-package go-mode)
-#+END_SRC
-** Frames, windows, buffers
-
-Always open files in the same frame, even when double-clicked from Finder.
-
-#+BEGIN_SRC emacs-lisp
-(setq ns-pop-up-frames nil)
-#+END_SRC
-
-Handy killall command.
-
-#+BEGIN_SRC emacs-lisp
-(defun kill-all-buffers ()
-  (interactive)
-  (mapc 'kill-buffer (buffer-list)))
-#+END_SRC
-** Which key
-
-This is great for learning Emacs, it shows a nice table of possible commands.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package which-key
-  :config
-  (which-key-mode)
-  (setq which-key-idle-delay 0.5))
-#+END_SRC
-* Server
-Start an Emacs server. This way, it is possible to use emacsclient from the terminal.
-
-#+BEGIN_SRC emacs-lisp
-(unless (server-running-p) (server-start))
-#+END_SRC
-
-To enable easy emacsclient, create =~/bin/ec=:
-
-#+BEGIN_SRC sh :tangle no
-#!/bin/sh
-# this assumes that my regular emacs app runs the server as part of startup
-emacsclient -n "$@" || (open -a emacs "$@")
+(use-package yaml-mode)
 #+END_SRC
