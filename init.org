@@ -94,8 +94,8 @@ Initialize package and add Melpa source.
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                  (not (gnutls-available-p))))
     (proto (if no-ssl "http" "https")))
-    (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-    ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
+    ;; (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+    (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
     )
 (package-initialize)
 #+END_SRC
@@ -120,7 +120,7 @@ Install use-package.
 ;; Right Alt (option) can be used to enter symbols like em dashes =—=.
 (setq mac-right-option-modifier 'nil)
 #+END_SRC
-** Emacs application
+** Application
 #+BEGIN_SRC emacs-lisp
 (setq
  inhibit-startup-message t         ; Don't show the startup message
@@ -141,6 +141,11 @@ Install use-package.
 
 ;; Window title
 (setq-default frame-title-format "%f")
+
+;; System PATH to run external commands
+(use-package exec-path-from-shell)
+(when (memq window-system '(mac ns))
+  (exec-path-from-shell-initialize))
 #+END_SRC
 ** Files
 #+BEGIN_SRC emacs-lisp
@@ -152,6 +157,11 @@ Install use-package.
 
 ;; Update buffers automatically when underlying files are changed externally.
 (global-auto-revert-mode t)
+
+;; Save
+(global-set-key (kbd "s-s") 'save-buffer)             ; save
+(global-set-key (kbd "s-S") 'write-file)              ; save as
+(global-set-key (kbd "s-q") 'save-buffers-kill-emacs) ; save and quit
 #+END_SRC
 ** Editor
 #+BEGIN_SRC emacs-lisp
@@ -176,81 +186,31 @@ Install use-package.
   :config
   (simpleclip-mode 1))
 
-;; Matching parenthesis
-(set-face-background 'show-paren-match "grey84")
-(set-face-attribute 'show-paren-match nil :weight 'extra-bold)
-(show-paren-mode)
-
-;; Indentations
-(setq-default indent-tabs-mode nil)
-(setq tab-width 2)
-(setq js-indent-level 2)
-(setq css-indent-offset 2)
-(setq-default c-basic-offset 2)
-(setq c-basic-offset 2)
-(setq-default tab-width 2)
-(setq-default c-basic-indent 2)
-#+END_SRC
-* Configurations
-** OS integration
-
-Pass system shell environment to Emacs. This is important primarily for shell inside Emacs, but also things like Org mode export to Tex PDF don't work, since it relies on running external command =pdflatex=, which is loaded from =PATH=.
-
-#+BEGIN_SRC emacs-lisp
-(use-package exec-path-from-shell)
-
-(when (memq window-system '(mac ns))
-  (exec-path-from-shell-initialize))
-#+END_SRC
-
-A nice little real terminal in a popup.
-
-#+BEGIN_SRC emacs-lisp
-(use-package shell-pop)
-#+END_SRC
-** Navigation and editing
-
-Kill line with =s-Backspace=, which is =Cmd-Backspace=. Note that thanks to Simpleclip, killing doesn't rewrite the system clipboard. Kill one word by =Alt-Backspace=. Also, kill forward word with =Alt-Shift-Backspace=, since =Alt-Backspace= is kill word backwards.
-
-#+BEGIN_SRC emacs-lisp
+;; Delete word/line
 (global-set-key (kbd "s-<backspace>") 'kill-whole-line)
 (global-set-key (kbd "M-S-<backspace>") 'kill-word)
+
+;; Undo stack
+(global-set-key (kbd "s-z") 'undo)
 #+END_SRC
-
-Use =super= (which is =Cmd=) for movement and selection just like in macOS.
-
+** Navigation & mark
 #+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "s-a") 'mark-whole-buffer)
+
+;; Lines
+(global-set-key (kbd "s-<up>") 'beginning-of-buffer)
+(global-set-key (kbd "s-<down>") 'end-of-buffer)
 (global-set-key (kbd "s-<right>") 'end-of-visual-line)
 (global-set-key (kbd "s-<left>") (kbd "M-m"))
 (global-set-key (kbd "S-s-<left>") (kbd "M-S-m"))
-
-(global-set-key (kbd "s-<up>") 'beginning-of-buffer)
-(global-set-key (kbd "s-<down>") 'end-of-buffer)
-
 (global-set-key (kbd "s-l") 'goto-line)
-#+END_SRC
 
-Basic things you should expect from macOS.
-
-#+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "s-a") 'mark-whole-buffer)       ;; select all
-(global-set-key (kbd "s-s") 'save-buffer)             ;; save
-(global-set-key (kbd "s-S") 'write-file)              ;; save as
-(global-set-key (kbd "s-q") 'save-buffers-kill-emacs) ;; quit
-(global-set-key (kbd "s-z") 'undo)                    ;; undo
-#+END_SRC
-
-Avy for fast navigation.
-
-#+BEGIN_SRC emacs-lisp
+;; Avy for fast navigation to particular character
 (use-package avy
   :config
   (global-set-key (kbd "s-;") 'avy-goto-char-timer))
-#+END_SRC
 
-Go back to previous mark (position) within buffer and go back (forward?).
-
-#+BEGIN_SRC emacs-lisp
+;; Marks (???)
 (defun my-pop-local-mark-ring ()
   (interactive)
   (set-mark-command t))
@@ -267,18 +227,15 @@ Go back to previous mark (position) within buffer and go back (forward?).
 
 (global-set-key (kbd "s-,") 'my-pop-local-mark-ring)
 (global-set-key (kbd "s-.") 'unpop-to-mark-command)
-#+END_SRC
 
-Since =Cmd+,= and =Cmd+.= move you back in forward in the current buffer, the same keys with =Shift= move you back and forward between open buffers.
-
-#+BEGIN_SRC emacs-lisp
+;; Navigation between buffers
 (global-set-key (kbd "s-<") 'previous-buffer)
 (global-set-key (kbd "s->") 'next-buffer)
 #+END_SRC
-
-Go to other windows easily with one keystroke =s-something= instead of =C-x something=.
-
+** Search
+** Windows
 #+BEGIN_SRC emacs-lisp
+;; Split
 (defun vsplit-last-buffer ()
   (interactive)
   (split-window-vertically)
@@ -291,13 +248,40 @@ Go to other windows easily with one keystroke =s-something= instead of =C-x some
   (other-window 1 nil)
   (switch-to-next-buffer))
 
-(global-set-key (kbd "s-w") (kbd "C-x 0")) ;; just like close tab in a web browser
-(global-set-key (kbd "s-W") (kbd "C-x 1")) ;; close others with shift
+(global-set-key (kbd "s-t") 'hsplit-last-buffer) ; horizontally
+(global-set-key (kbd "s-T") 'vsplit-last-buffer) ; vertically
 
-(global-set-key (kbd "s-T") 'vsplit-last-buffer)
-(global-set-key (kbd "s-t") 'hsplit-last-buffer)
+;; Close
+(global-set-key (kbd "s-w") (kbd "C-x 0")) ; close current (like in browser)
+(global-set-key (kbd "s-W") (kbd "C-x 1")) ; close all others
 #+END_SRC
+* Programming
+** General
+#+BEGIN_SRC emacs-lisp
+;; Indentations
+(setq-default indent-tabs-mode nil)
+(setq tab-width 2)
+(setq js-indent-level 2)
+(setq css-indent-offset 2)
+(setq-default c-basic-offset 2)
+(setq c-basic-offset 2)
+(setq-default tab-width 2)
+(setq-default c-basic-indent 2)
 
+;; Matching parenthesis
+(set-face-background 'show-paren-match "grey84")
+(set-face-attribute 'show-paren-match nil :weight 'extra-bold)
+(show-paren-mode)
+
+;; Comment/uncomment line
+(global-set-key (kbd "s-/") 'comment-line)
+#+END_SRC
+** Terminal
+#+BEGIN_SRC emacs-lisp
+(use-package shell-pop)
+#+END_SRC
+* Configurations
+** Navigation and editing
 Expand-region allows to gradually expand selection inside words, sentences, etc. =C-'= is bound to Org's =cycle through agenda files=, which I don't really use, so I unbind it here before assigning global shortcut for expansion.
 
 #+BEGIN_SRC emacs-lisp
@@ -396,12 +380,6 @@ Multiple cusors are a must. Make <return> insert a newline; multiple-cursors-mod
   (global-set-key (kbd "s-d") 'mc/mark-next-like-this)
   (global-set-key (kbd "s-D") 'mc/mark-all-dwim)
   (define-key mc/keymap (kbd "<return>") nil))
-#+END_SRC
-
-Comment lines.
-
-#+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "s-/") 'comment-line)
 #+END_SRC
 ** Windows
 
@@ -548,9 +526,9 @@ Spellcheck current word.
 Spellcheck was =Cmd+\=, synonym search is =Cmd+Shift+\=.
 
 #+BEGIN_SRC emacs-lisp
-(use-package powerthesaurus
-  :config
-  (global-set-key (kbd "s-|") 'powerthesaurus-lookup-word-dwim))
+;; (use-package powerthesaurus
+;;   :config
+;;   (global-set-key (kbd "s-|") 'powerthesaurus-lookup-word-dwim))
 #+END_SRC
 
 Word definition search.
@@ -638,15 +616,15 @@ Clojure.
 
 #+BEGIN_SRC emacs-lisp
 (use-package clojure-mode)
-(use-package cider)
+;; (use-package cider)
 
-(use-package clj-refactor)
-(add-hook 'clojure-mode-hook
-          (lambda ()
-            (clj-refactor-mode 1)
-            (yas-minor-mode 1) ; for adding require/use/import statements
-            ;; This choice of keybinding leaves cider-macroexpand-1 unbound
-            (cljr-add-keybindings-with-prefix "C-c C-m")))
+;; (use-package clj-refactor)
+;; (add-hook 'clojure-mode-hook
+;;           (lambda ()
+;;             (clj-refactor-mode 1)
+;;             (yas-minor-mode 1) ; for adding require/use/import statements
+;;             ;; This choice of keybinding leaves cider-macroexpand-1 unbound
+;;             (cljr-add-keybindings-with-prefix "C-c C-m")))
 #+END_SRC
 
 Web mode.
