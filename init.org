@@ -1,15 +1,14 @@
 #+TITLE: Emacs configuration file
 #+AUTHOR: Andrew Lanin
-#+AUTHOR: Rakhim Davletkaliyev
 #+BABEL: :cache yes
 #+PROPERTY: header-args :tangle yes
-#+STARTUP: overview
+#+STARTUP: content
 
 * Credits
 Based on [[https://github.com/freetonik/emacs-dotfiles][Rakhim's config]]. Check out [[https://github.com/freetonik/emacscast][EmacsCast]], his podcast about Emacs.
 * Installing
 ** Emacs
-This config works best with this [[https://emacsformacosx.com/][https://emacsformacosx.com/]].
+This config works best with [[https://emacsformacosx.com/][https://emacsformacosx.com/]].
 ** Dependencies
 Few utils needed.
 
@@ -58,15 +57,12 @@ When this configuration is loaded for the first time, the =init.el= is the file 
 (byte-compile-file (concat user-emacs-directory "init.el"))
 #+END_SRC
 
-Lexical scoping for the init-file is needed, it can be specified in the header. This is the first line of the actual configuration:
+But then it's being replaced by result of org file processing (tangling). Here begins real content of target emacs configuration.
 
 #+BEGIN_SRC emacs-lisp
 ;;; -*- lexical-binding: t -*-
-#+END_SRC
 
-Tangle and compile this file on save automatically:
-
-#+BEGIN_SRC emacs-lisp
+;; Tangle and compile this file on save automatically:
 (defun tangle-init ()
   "If the current buffer is 'init.org' the code-blocks are
    tangled, and the tangled file is compiled."
@@ -78,18 +74,14 @@ Tangle and compile this file on save automatically:
       (byte-compile-file (concat user-emacs-directory "init.el")))))
 
 (add-hook 'after-save-hook 'tangle-init)
-#+END_SRC
 
-This helps get rid of =functions might not be defined at runtime= warnings. See https://github.com/jwiegley/use-package/issues/590
-
-#+BEGIN_SRC emacs-lisp
+;; This helps get rid of =functions might not be defined at runtime= warnings. See https://github.com/jwiegley/use-package/issues/590
 (eval-when-compile
   (setq use-package-expand-minimally byte-compile-current-file))
 #+END_SRC
 ** Package management
-Initialize package and add Melpa source.
-
 #+BEGIN_SRC emacs-lisp
+;; Initialize package and add Melpa source.
 (require 'package)
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                  (not (gnutls-available-p))))
@@ -98,17 +90,12 @@ Initialize package and add Melpa source.
     (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
     )
 (package-initialize)
-#+END_SRC
 
-Install use-package.
-
-#+BEGIN_SRC emacs-lisp
+;; Covenient way to configure packages
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
-
 (eval-when-compile (require 'use-package))
-
 (setq use-package-always-ensure t)
 #+END_SRC
 ** Modifier keys
@@ -162,6 +149,12 @@ Install use-package.
 (global-set-key (kbd "s-s") 'save-buffer)             ; save
 (global-set-key (kbd "s-S") 'write-file)              ; save as
 (global-set-key (kbd "s-q") 'save-buffers-kill-emacs) ; save and quit
+
+;; Delete trailing whitespaces before save
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+;; Ensure there is new line at the end of file
+(setq require-final-newline t)
 #+END_SRC
 ** Editor
 #+BEGIN_SRC emacs-lisp
@@ -178,10 +171,11 @@ Install use-package.
 ;; Wrap long lines and navigate by visual lines that you see on screen, not logical lines in file.
 (global-visual-line-mode t)
 
+;; Font
 (set-face-attribute 'default nil :font "Inconsolata LGC 14")
 (setq-default line-spacing 0)
 
-;; I want Emacs kill ring and system clipboard to be independent. Simpleclip is the solution to that.
+;; Make emacs kill ring and system clipboard independent.
 (use-package simpleclip
   :config
   (simpleclip-mode 1))
@@ -192,6 +186,71 @@ Install use-package.
 
 ;; Undo stack
 (global-set-key (kbd "s-z") 'undo)
+
+;; Move lines around with meta-up/down
+(use-package move-text
+  :config
+  (move-text-default-bindings))
+
+;; Insert new line above or below
+(defun smart-open-line ()
+  "Insert an empty line after the current line. Position the cursor at its beginning, according to the current mode."
+  (interactive)
+  (move-end-of-line nil)
+  (newline-and-indent))
+
+(defun smart-open-line-above ()
+  "Insert an empty line above the current line. Position the cursor at it's beginning, according to the current mode."
+  (interactive)
+  (move-beginning-of-line nil)
+  (newline-and-indent)
+  (forward-line -1)
+  (indent-according-to-mode))
+
+(global-set-key (kbd "s-<return>") 'smart-open-line)
+(global-set-key (kbd "s-S-<return>") 'smart-open-line-above)
+
+;; Join multiple lines
+(defun smart-join-line (beg end)
+  "If in a region, join all the lines in it. If not, join the current line with the next line."
+  (interactive "r")
+  (if mark-active
+      (join-region beg end)
+      (top-join-line)))
+
+(defun top-join-line ()
+  "Join the current line with the next line."
+  (interactive)
+  (delete-indentation 1))
+
+(defun join-region (_beg _end)
+  "Join all the lines in the region."
+  (interactive "r")
+  (if mark-active
+      (let ((beg (region-beginning))
+            (end (copy-marker (region-end))))
+        (goto-char beg)
+        (while (< (point) end)
+          (join-line 1)))))
+
+(global-set-key (kbd "s-j") 'smart-join-line)
+
+;; Convert to uppercase or lowercase
+(global-set-key (kbd "M-u") 'upcase-dwim)
+(global-set-key (kbd "M-l") 'downcase-dwim)
+
+;; Replace command with nice visual feedback
+(use-package visual-regexp
+  :config
+  (define-key global-map (kbd "s-r") 'vr/replace))
+
+;; Multiple cursor support
+(use-package multiple-cursors
+  :config
+  (setq mc/always-run-for-all 1)
+  (global-set-key (kbd "s-d") 'mc/mark-next-like-this)
+  (global-set-key (kbd "s-D") 'mc/mark-all-dwim)
+  (define-key mc/keymap (kbd "<return>") nil))
 #+END_SRC
 ** Navigation & mark
 #+BEGIN_SRC emacs-lisp
@@ -210,7 +269,7 @@ Install use-package.
   :config
   (global-set-key (kbd "s-;") 'avy-goto-char-timer))
 
-;; Marks (???)
+;; Navigation between marks (???)
 (defun my-pop-local-mark-ring ()
   (interactive)
   (set-mark-command t))
@@ -231,8 +290,13 @@ Install use-package.
 ;; Navigation between buffers
 (global-set-key (kbd "s-<") 'previous-buffer)
 (global-set-key (kbd "s->") 'next-buffer)
+
+;; Expand-region allows to gradually expand selection inside words, sentences, etc.
+(use-package expand-region
+  :config
+  (global-set-key (kbd "s-'") 'er/expand-region)
+  (global-set-key (kbd "s-\"") 'er/contract-region))
 #+END_SRC
-** Search
 ** Windows
 #+BEGIN_SRC emacs-lisp
 ;; Split
@@ -282,104 +346,10 @@ Install use-package.
 #+END_SRC
 * Configurations
 ** Navigation and editing
-Expand-region allows to gradually expand selection inside words, sentences, etc. =C-'= is bound to Org's =cycle through agenda files=, which I don't really use, so I unbind it here before assigning global shortcut for expansion.
-
-#+BEGIN_SRC emacs-lisp
-(use-package expand-region
-  :config
-  (global-set-key (kbd "s-'") 'er/expand-region)
-  (global-set-key (kbd "s-\"") 'er/contract-region))
-
-#+END_SRC
-
-=Move-text= allows moving lines around with meta-up/down.
-
-#+BEGIN_SRC emacs-lisp
-(use-package move-text
-  :config
-  (move-text-default-bindings))
-#+END_SRC
-
-Smarter open-line by [[http://emacsredux.com/blog/2013/03/26/smarter-open-line/][bbatsov]]. Once again, I'm taking advantage of CMD and using it to quickly insert new lines above or below the current line, with correct indentation and stuff.
-
-#+BEGIN_SRC emacs-lisp
-(defun smart-open-line ()
-  "Insert an empty line after the current line. Position the cursor at its beginning, according to the current mode."
-  (interactive)
-  (move-end-of-line nil)
-  (newline-and-indent))
-
-(defun smart-open-line-above ()
-  "Insert an empty line above the current line. Position the cursor at it's beginning, according to the current mode."
-  (interactive)
-  (move-beginning-of-line nil)
-  (newline-and-indent)
-  (forward-line -1)
-  (indent-according-to-mode))
-
-(global-set-key (kbd "s-<return>") 'smart-open-line)
-(global-set-key (kbd "s-S-<return>") 'smart-open-line-above)
-#+END_SRC
-
-Join lines whether you're in a region or not.
-
-#+BEGIN_SRC emacs-lisp
-(defun smart-join-line (beg end)
-  "If in a region, join all the lines in it. If not, join the current line with the next line."
-  (interactive "r")
-  (if mark-active
-      (join-region beg end)
-      (top-join-line)))
-
-(defun top-join-line ()
-  "Join the current line with the next line."
-  (interactive)
-  (delete-indentation 1))
-
-(defun join-region (_beg _end)
-  "Join all the lines in the region."
-  (interactive "r")
-  (if mark-active
-      (let ((beg (region-beginning))
-            (end (copy-marker (region-end))))
-        (goto-char beg)
-        (while (< (point) end)
-          (join-line 1)))))
-
-(global-set-key (kbd "s-j") 'smart-join-line)
-#+END_SRC
-
-Upcase word and region using the same keys.
-
-#+Begin_SRC emacs-lisp
-(global-set-key (kbd "M-u") 'upcase-dwim)
-(global-set-key (kbd "M-l") 'downcase-dwim)
-#+END_SRC
-
-Provide nice visual feedback for replace.
-
-#+BEGIN_SRC emacs-lisp
-(use-package visual-regexp
-  :config
-  (define-key global-map (kbd "s-r") 'vr/replace))
-#+END_SRC
-
-Delete trailing spaces and add new line in the end of a file on save.
-
-#+BEGIN_SRC emacs-lisp
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-(setq require-final-newline t)
-#+END_SRC
 
 Multiple cusors are a must. Make <return> insert a newline; multiple-cursors-mode can still be disabled with C-g.
 
 #+BEGIN_SRC emacs-lisp
-(use-package multiple-cursors
-  :config
-  (setq mc/always-run-for-all 1)
-  (global-set-key (kbd "s-d") 'mc/mark-next-like-this)
-  (global-set-key (kbd "s-D") 'mc/mark-all-dwim)
-  (define-key mc/keymap (kbd "<return>") nil))
 #+END_SRC
 ** Windows
 
