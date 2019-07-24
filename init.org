@@ -76,8 +76,8 @@ But then it's being replaced by result of org file processing (tangling). Here b
 (add-hook 'after-save-hook 'tangle-init)
 
 ;; This helps get rid of =functions might not be defined at runtime= warnings. See https://github.com/jwiegley/use-package/issues/590
-(eval-when-compile
-  (setq use-package-expand-minimally byte-compile-current-file))
+;; (eval-when-compile
+;;   (setq use-package-expand-minimally byte-compile-current-file))
 #+END_SRC
 ** Package management
 #+BEGIN_SRC emacs-lisp
@@ -446,19 +446,6 @@ But then it's being replaced by result of org file processing (tangling). Here b
   (interactive)
   (mapc 'kill-buffer (buffer-list)))
 #+END_SRC
-** Server
-#+BEGIN_SRC emacs-lisp
-;; Start an Emacs server. This way, it is possible to use emacsclient from the terminal.
-;;(unless (server-running-p) (server-start))
-#+END_SRC
-
-To enable easy emacsclient, create =~/bin/ec=:
-
-#+BEGIN_SRC sh :tangle no
-#!/bin/sh
-# this assumes that my regular emacs app runs the server as part of startup
-emacsclient -n "$@" || (open -a emacs "$@")
-#+END_SRC
 ** Help
 #+BEGIN_SRC emacs-lisp :tangle no
 ;; This is great for learning Emacs, it shows a nice table of possible commands.
@@ -667,4 +654,17 @@ emacsclient -n "$@" || (open -a emacs "$@")
 ** YAML
 #+BEGIN_SRC emacs-lisp
 (use-package yaml-mode)
+#+END_SRC
+* Server
+#+BEGIN_SRC emacs-lisp
+;; Start an Emacs server. This way, it is possible to use emacsclient from the terminal.
+(unless (server-running-p) (server-start))
+#+END_SRC
+
+To enable easy emacsclient, create =~/bin/ec=:
+
+#+BEGIN_SRC sh :tangle no
+#!/bin/sh
+# this assumes that my regular emacs app runs the server as part of startup
+emacsclient -n "$@" || (open -a emacs "$@")
 #+END_SRC
