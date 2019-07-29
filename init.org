@@ -536,7 +536,7 @@ But then it's being replaced by result of org file processing (tangling). Here b
   (global-set-key (kbd "s-g") 'magit-status))
 
 ;; Bind Cmd+Shift+p to switch between repos
-(setq magit-repository-directories '(("\~" . 4)))
+(setq magit-repository-directories '(("\~" . 1)))
 (defun magit-status-with-prefix-arg ()
   "Call `magit-status` with a prefix."
   (interactive)
@@ -624,14 +624,23 @@ But then it's being replaced by result of org file processing (tangling). Here b
 #+END_SRC
 ** Go
 #+BEGIN_SRC emacs-lisp
-(use-package go-mode)
+(use-package go-mode
+  :config
+  (setq gofmt-command "goimports")
+  (add-hook 'go-mode-hook
+          (lambda ()
+            (add-hook 'before-save-hook 'gofmt-before-save)
+            (setq tab-width 2))))
 #+END_SRC
 ** Web
 #+BEGIN_SRC emacs-lisp
 (use-package web-mode
   :mode ("\\.html\\'" "\\.js\\'" "\\.jsx\\'" "\\.css\\'")
   :config
-  (setq web-mode-markup-indent-offset 2))
+  (setq
+   web-mode-markup-indent-offset 2
+   web-mode-css-indent-offset    2
+   web-mode-code-indent-offset   2))
 
 ;; Use jsx instead of javascript syntax
 (add-hook 'web-mode-hook
