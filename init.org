@@ -511,6 +511,9 @@ But then it's being replaced by result of org file processing (tangling). Here b
 * Programming
 ** General
 #+BEGIN_SRC emacs-lisp
+;; Turn off syntax highlighting
+(global-font-lock-mode 0)
+
 ;; Indentations
 (setq-default indent-tabs-mode nil)
 (setq tab-width 2)
@@ -547,15 +550,6 @@ But then it's being replaced by result of org file processing (tangling). Here b
 ** Terminal
 #+BEGIN_SRC emacs-lisp
 (use-package shell-pop)
-#+END_SRC
-** Auto completion
-#+BEGIN_SRC emacs-lisp
-(use-package company
-  :config
-  (setq company-idle-delay 0.1)
-  (setq company-global-modes '(not org-mode markdown-mode))
-  (setq company-minimum-prefix-length 1)
-  (add-hook 'after-init-hook 'global-company-mode))
 #+END_SRC
 ** Navigation
 #+BEGIN_SRC emacs-lisp
