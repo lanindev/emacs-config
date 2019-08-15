@@ -634,7 +634,9 @@ But then it's being replaced by result of org file processing (tangling). Here b
   (setq
    web-mode-markup-indent-offset 2
    web-mode-css-indent-offset    2
-   web-mode-code-indent-offset   2))
+   web-mode-code-indent-offset   2
+   web-mode-tag-auto-close-style 0 ; Turn off buggy tag auto-close
+   ))
 
 ;; Use jsx instead of javascript syntax
 (add-hook 'web-mode-hook
