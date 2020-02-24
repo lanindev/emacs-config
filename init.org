@@ -202,7 +202,7 @@ But then it's being replaced by result of org file processing (tangling). Here b
 (global-visual-line-mode t)
 
 ;; Font
-(set-face-attribute 'default nil :font "Inconsolata LGC 14")
+(set-face-attribute 'default nil :font "Iosevka 14")
 (setq-default line-spacing 0)
 
 ;; Make emacs kill ring and system clipboard independent.
