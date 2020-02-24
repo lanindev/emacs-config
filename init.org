@@ -395,14 +395,12 @@ But then it's being replaced by result of org file processing (tangling). Here b
 (setq split-width-threshold nil)
 
 ;; Move between windows
-;; TODO: Need better bindings
-(global-set-key (kbd "s-o") (kbd "C-x o"))
 (use-package windmove
   :config
-  (global-set-key (kbd "s-[")   'windmove-left)  ; Cmd+[ go to left window
-  (global-set-key (kbd "s-]")   'windmove-right) ; Cmd+] go to right window
-  (global-set-key (kbd "s-{")   'windmove-up)    ; Cmd+Shift+[ go to upper window
-  (global-set-key (kbd "s-<}>") 'windmove-down)) ; Ctrl+Shift+[ go to down window
+  (global-set-key (kbd "<M-s-left>")  'windmove-left)
+  (global-set-key (kbd "<M-s-right>") 'windmove-right)
+  (global-set-key (kbd "<M-s-up>")    'windmove-up)
+  (global-set-key (kbd "<M-s-down>")  'windmove-down))
 
 ;; TODO: What is this?
 (winner-mode 1)
