@@ -13,8 +13,7 @@ This config works best with [[https://emacsformacosx.com/][https://emacsformacos
 Few utils needed.
 
 #+BEGIN_SRC sh :tangle no
-brew install ripgrep # For dumb-jump
-brew cask install mactex # TODO: Why?
+brew install ripgrep # To search in files
 brew install aspell # Spell checker
 #+END_SRC
 ** Config
